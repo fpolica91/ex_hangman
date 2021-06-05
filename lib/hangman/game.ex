@@ -14,6 +14,12 @@ defmodule Hangman.Game do
     }
   end
 
+  def new_game(word) do
+    %__MODULE__{
+      letters: word |> String.codepoints()
+    }
+  end
+
   def make_move(game = %{game_state: state}, _guess) when state in [:won, :lost] do
     {game, tally(game)}
   end
@@ -23,15 +29,32 @@ defmodule Hangman.Game do
     {game, tally(game)}
   end
 
+  def accept_move(game, guess, _already_guessed = false) do
+    Map.put(game, :used, MapSet.put(game.used, guess))
+    |> score_guess(Enum.member?(game.letters, guess))
+  end
+
   def accept_move(game, _guess, _already_guessed = true) do
     Map.put(game, :game_state, :already_used)
   end
 
-  def accept_move(game, guess, _already_guessed ) do
-    Map.put(game, :used, MapSet.put(game.used, guess))
+  def score_guess(game, _good_guess = true) do
+    # if the guessed letter is part of the words
+    new_state =
+      MapSet.new(game.letters)
+      |> MapSet.subset?(game.used)
+      |> maybe_won()
+
+    Map.put(game, :game_state, new_state)
   end
 
+  def score_guess(game, _good_guess = false) do
+    # game.turns_left --
+    game
+  end
 
+  def maybe_won(true), do: :won
+  def maybe_won(_), do: :good_guess
 
   def tally(game) do
     123
